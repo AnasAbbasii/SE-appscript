@@ -1,0 +1,17 @@
+<script>
+function $(id){return document.getElementById(id)}
+function uuid(){return 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function show(id,text,ok){var m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=text}
+/* call a server function; server always returns {ok:..}. */
+function call(fn,args,done,fail){
+  var r=google.script.run.withSuccessHandler(function(res){
+    if(!res||res.ok===false){if(fail)fail(res&&res.error||'Unexpected response.');}else done(res)})
+   .withFailureHandler(function(){if(fail)fail('Connection problem. Please check your network and try again.')});
+  r[fn].apply(r,args||[]);
+}
+function validEmail(s){return !s||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)}
+function validPhone(s){var d=(s||'').replace(/\D/g,'');return /^\+?[\d\s\-()]{10,20}$/.test(s||'')&&d.length>=10&&d.length<=15}
+function validDate(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');if(!m)return false;var d=new Date(+m[1],+m[2]-1,+m[3]);return d.getMonth()==+m[2]-1&&d.getDate()==+m[3]}
+function validAmount(s){return /^\d+(\.\d+)?$/.test(String(s).replace(/,/g,''))&&parseFloat(String(s).replace(/,/g,''))>0}
+</script>

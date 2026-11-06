@@ -1,0 +1,30 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>Manage Donor <span id="did" class="pill"></span></h3>
+<div id="dupBox" class="warn hide"></div>
+<div id="main" class="hide">
+<label>Name *</label><input id="name">
+<div class="row"><div><label>WhatsApp Number *</label><input id="wa"></div><div><label>Email</label><input id="email"></div></div>
+<div id="stu"><div class="row"><div><label>University *</label><input id="uni"></div><div><label>Department *</label><input id="dept"></div></div>
+<div class="row"><div><label>Class *</label><input id="cls"></div><div><label>Roll Number *</label><input id="roll"></div></div></div>
+<div class="bar"><button type="button" id="save">Save Donor</button><button type="button" class="sec" id="back">Back to search</button></div>
+<div id="msg" class="msg"></div>
+<h3 style="margin-top:16px">Donations</h3><div id="don" class="small">Loading…</div>
+</div>
+<?!= include('Common') ?>
+<script>
+var ID=<?!= JSON.stringify(donorId) ?>,outsider=false,confirmNew=false,busy=false;
+$('did').textContent=ID;$('back').onclick=function(){google.script.run.openSearchDonor()};
+function load(){call('getDonorForEdit',[ID],function(r){var d=r.donor;outsider=d.type==='Outsider';$('main').className='';$('stu').className=outsider?'hide':'';
+ $('name').value=d.name;$('wa').value=d.whatsapp;$('email').value=d.email;$('uni').value=d.university;$('dept').value=d.department;$('cls').value=d.className;$('roll').value=d.roll;
+ $('don').innerHTML=d.donations.length?'<table><tr><th>Date</th><th>Amount</th><th>Status</th><th>Record</th><th></th></tr>'+d.donations.map(function(x){return'<tr><td>'+esc(x.date)+'</td><td>'+Number(x.amount).toLocaleString()+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.recordId)+'</td><td><button type="button" class="sec" data-r="'+esc(x.recordId)+'">Edit</button></td></tr>'}).join('')+'</table>':'No donations recorded.';
+ $('don').querySelectorAll('button[data-r]').forEach(function(b){b.onclick=function(){b.disabled=true;google.script.run.openManageDonation(b.dataset.r)}})},function(e){$('main').className='';show('msg',e)})}
+function submit(){if(busy)return;var p={donorId:ID,confirmNew:confirmNew,name:$('name').value,whatsapp:$('wa').value,email:$('email').value,university:$('uni').value,department:$('dept').value,className:$('cls').value,roll:$('roll').value};
+ if(!p.name.trim())return show('msg','Please enter the donor name.');if(!validPhone(p.whatsapp))return show('msg','Please enter a valid WhatsApp number.');if(!validEmail(p.email))return show('msg','Please enter a valid email address.');
+ if(!outsider&&(!p.university.trim()||!p.department.trim()||!p.className.trim()||!p.roll.trim()))return show('msg','Students must provide university, department, class and roll number.');
+ busy=true;$('save').disabled=true;show('msg','Saving…',true);
+ call('saveDonor',[p],function(r){busy=false;$('save').disabled=false;if(r.duplicate){$('msg').className='msg';var b=$('dupBox');b.className='warn';
+  b.innerHTML='<b>'+esc(r.message)+'</b><table>'+r.matches.map(function(m){return'<tr><td>'+esc(m.name)+'<div class="small">'+esc(m.donorId)+' · '+esc(m.reason)+'</div></td></tr>'}).join('')+'</table><div class="bar"><button type="button" class="sec" id="go">Save anyway</button><button type="button" class="sec" id="no">Cancel</button></div>';
+  $('go').onclick=function(){confirmNew=true;b.className='warn hide';submit()};$('no').onclick=function(){b.className='warn hide'};return}
+  confirmNew=false;show('msg',r.message,true);load()},function(e){busy=false;$('save').disabled=false;show('msg',e)})}
+$('save').onclick=submit;load();
+</script></body></html>

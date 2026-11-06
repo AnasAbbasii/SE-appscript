@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>Manage Donation <span id="rid" class="pill"></span></h3>
+<div id="main" class="hide">
+<div class="small" id="who"></div>
+<div class="row"><div><label>Date *</label><input id="date" type="date"></div><div><label>Amount *</label><input id="amt" inputmode="decimal"></div></div>
+<div class="row"><div><label>Verification Status</label><select id="status"></select></div><div><label>Receipt (Drive link or ID)</label><input id="rec"></div></div>
+<div class="bar"><button type="button" id="save">Save Changes</button><button type="button" class="sec" id="back">Back to donor</button></div>
+</div><div id="msg" class="msg"></div>
+<?!= include('Common') ?>
+<script>
+var RID=<?!= JSON.stringify(recordId) ?>,DID='',busy=false;$('rid').textContent=RID;
+call('getDonation',[RID],function(r){var d=r.donation;DID=d.donorId;$('main').className='';$('who').textContent=d.name+' · '+d.donorId;$('date').value=d.date;$('amt').value=d.amount;$('rec').value=d.receipt;
+ $('status').innerHTML=r.statuses.map(function(s){return'<option'+(s===d.status?' selected':'')+'>'+esc(s)+'</option>'}).join('')},function(e){show('msg',e)});
+$('back').onclick=function(){DID?google.script.run.openManageDonor(DID):google.script.run.openSearchDonor()};
+$('save').onclick=function(){if(busy)return;var p={recordId:RID,date:$('date').value,amount:$('amt').value,status:$('status').value,receipt:$('rec').value};
+ if(!validDate(p.date))return show('msg','Please enter a valid donation date.');if(!validAmount(p.amount))return show('msg','Please enter a valid donation amount.');
+ busy=true;$('save').disabled=true;show('msg','Saving…',true);
+ call('updateDonation',[p],function(r){busy=false;$('save').disabled=false;show('msg',r.message,true)},function(e){busy=false;$('save').disabled=false;show('msg',e)})};
+</script></body></html>

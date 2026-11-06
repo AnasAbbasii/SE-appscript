@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>Search Donors</h3>
+<div class="row"><div><input id="q" type="search" placeholder="Name, Donor ID, WhatsApp, email, roll number…" autocomplete="off"></div><div style="flex:0 0 80px"><button type="button" id="go">Search</button></div></div>
+<div id="msg" class="msg"></div><div id="res" class="small" style="margin-top:8px">Type at least one character to search.</div>
+<?!= include('Common') ?>
+<script>
+var t=null,seq=0,cur=[];
+function run(){var q=$('q').value.trim();if(!q){$('res').textContent='Type at least one character to search.';return}var my=++seq;
+ call('searchDonorRecords',[q],function(r){if(my!==seq)return;cur=r.results;$('msg').className='msg';
+  $('res').innerHTML=cur.length?'<table><tr><th>Donor</th><th>Type</th><th>Total</th><th>Month</th><th></th></tr>'+cur.map(function(p,i){return'<tr><td><b>'+esc(p.name)+'</b><div class="small">'+esc(p.donorId)+' · '+esc(p.whatsapp)+(p.email?' · '+esc(p.email):'')+'</div></td><td><span class="pill">'+esc(p.type)+'</span></td><td>'+p.count+' / '+Number(p.total).toLocaleString()+'</td><td>'+esc(p.monthStatus||'—')+'</td><td><button type="button" data-i="'+i+'">Manage</button></td></tr>'}).join('')+'</table>':'No matching donor found.';
+  $('res').querySelectorAll('button[data-i]').forEach(function(b){b.onclick=function(){b.disabled=true;google.script.run.openManageDonor(cur[+b.dataset.i].donorId)}})},
+ function(e){show('msg',e)})}
+$('q').addEventListener('input',function(){clearTimeout(t);t=setTimeout(run,250)});
+$('q').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();clearTimeout(t);run()}});
+$('go').onclick=run;$('q').focus();
+</script></body></html>

@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>Admin</h3><div id="sum" class="small">Loading…</div>
+<div class="bar"><button type="button" data-fn="adminValidate">Validate</button><button type="button" data-fn="adminSync">Synchronize</button><button type="button" data-fn="adminRepair">Repair</button><button type="button" data-fn="adminReset">Reset Month</button><button type="button" data-fn="adminReport">Report</button></div>
+<div id="msg" class="msg"></div><div id="out" class="small" style="margin-top:8px"></div>
+<?!= include('Common') ?>
+<script>
+function summary(){call('getAdminSummary',[],function(r){$('sum').innerHTML='<table>'+r.metrics.map(function(m){return'<tr><td>'+esc(m[0])+'</td><td><b>'+esc(m[1])+'</b></td></tr>'}).join('')+'</table><div style="margin-top:6px">Valid status: <b>'+esc(r.validStatus)+'</b> · Report folder: <b>'+(r.folderSet?'set':'not set')+'</b></div>'},function(e){$('sum').textContent=e})}
+function list(is){return is.length?'<table><tr><th>Level</th><th>Where</th><th>Issue</th></tr>'+is.map(function(i){return'<tr><td>'+esc(i.level)+'</td><td>'+esc(i.sheet)+(i.row?' r'+i.row:'')+'</td><td>'+esc(i.message)+'</td></tr>'}).join('')+'</table>':'No problems found.'}
+document.querySelectorAll('button[data-fn]').forEach(function(b){b.onclick=function(){var all=document.querySelectorAll('button[data-fn]');all.forEach(function(x){x.disabled=true});show('msg','Working…',true);$('out').innerHTML='';
+ call(b.dataset.fn,[],function(r){all.forEach(function(x){x.disabled=false});show('msg',r.message||'Done.',true);if(r.issues)$('out').innerHTML=list(r.issues);if(b.dataset.fn==='adminValidate'){$('msg').className='msg'}if(r.url)$('out').innerHTML='<a href="'+esc(r.url)+'" target="_blank">Open report</a>';summary()},
+ function(e){all.forEach(function(x){x.disabled=false});show('msg',e)})}});
+summary();
+</script></body></html>

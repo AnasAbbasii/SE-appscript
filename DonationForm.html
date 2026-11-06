@@ -1,0 +1,38 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>New Donation</h3>
+<div class="chk"><input type="checkbox" id="out"><label for="out">I am an outsider (not a student)</label></div>
+<div id="dupBox" class="warn hide"></div>
+<div id="main">
+<label>Name *</label><input id="name" autocomplete="off">
+<div class="row"><div><label>WhatsApp Number *</label><input id="wa" placeholder="+92300..."></div><div><label>Email</label><input id="email" type="email"></div></div>
+<div id="stu">
+ <div class="row"><div><label>University *</label><input id="uni"></div><div><label>Department *</label><input id="dept"></div></div>
+ <div class="row"><div><label>Class *</label><input id="cls"></div><div><label>Roll Number *</label><input id="roll"></div></div>
+</div>
+<div class="row"><div><label>Date *</label><input id="date" type="date"></div><div><label>Amount *</label><input id="amt" inputmode="decimal"></div></div>
+<div class="row"><div><label>Verification Status</label><select id="status"></select></div><div><label>Receipt (Drive link or ID)</label><input id="rec"></div></div>
+<div class="bar"><button type="button" id="save">Save Donation</button><button type="button" class="sec" onclick="google.script.host.close()">Close</button></div>
+</div><div id="msg" class="msg"></div>
+<?!= include('Common') ?>
+<script>
+var token=uuid(),donorId='',confirmNew=false,busy=false;
+call('getFormBootstrap',[],function(b){$('date').value=b.today;$('status').innerHTML=b.statuses.map(function(s){return '<option>'+esc(s)+'</option>'}).join('')},function(e){show('msg',e)});
+$('out').addEventListener('change',function(){var o=this.checked;['uni','dept','cls','roll'].forEach(function(i){$(i).value='';$(i).disabled=o});$('stu').className=o?'hide':''});
+function payload(){var o=$('out').checked;return{token:token,isOutsider:o,donorId:donorId,confirmNew:confirmNew,name:$('name').value,whatsapp:$('wa').value,email:$('email').value,
+ university:o?'':$('uni').value,department:o?'':$('dept').value,className:o?'':$('cls').value,roll:o?'':$('roll').value,date:$('date').value,amount:$('amt').value,status:$('status').value,receipt:$('rec').value}}
+function check(p){if(!p.name.trim())return'Please enter the donor name.';if(!donorId&&!validPhone(p.whatsapp))return'Please enter a valid WhatsApp number.';if(!validEmail(p.email))return'Please enter a valid email address.';
+ if(!donorId&&!p.isOutsider&&(!p.university.trim()||!p.department.trim()||!p.className.trim()||!p.roll.trim()))return'Students must provide university, department, class and roll number.';
+ if(!validDate(p.date))return'Please enter a valid donation date.';if(!validAmount(p.amount))return'Please enter a valid donation amount.';return''}
+function submit(){if(busy)return;var p=payload(),e=check(p);if(e){show('msg',e);return}
+ busy=true;$('save').disabled=true;show('msg','Saving…',true);
+ call('saveDonation',[p],function(r){
+  if(r.duplicate){busy=false;$('save').disabled=false;$('msg').className='msg';showDup(r);return}
+  $('main').className='hide';$('dupBox').className='warn hide';show('msg',r.message+'\nDonor ID: '+r.donorId+'   Record ID: '+r.recordId,true);
+  $('msg').insertAdjacentHTML('afterend','<div class="bar"><button type="button" onclick="location.reload()">Add Another</button><button type="button" class="sec" onclick="google.script.host.close()">Close</button></div>');
+ },function(e){busy=false;$('save').disabled=false;show('msg',e)})}
+function showDup(r){var b=$('dupBox');b.className='warn';
+ b.innerHTML='<b>'+esc(r.message)+'</b><table>'+r.matches.map(function(m,i){return'<tr><td>'+esc(m.name)+'<div class="small">'+esc(m.donorId)+' · '+esc(m.reason)+'</div></td><td><button type="button" data-i="'+i+'">Use this donor</button></td></tr>'}).join('')+'</table><div class="bar"><button type="button" class="sec" id="newAnyway">Create new donor anyway</button><button type="button" class="sec" id="cancelDup">Cancel</button></div>';
+ b.querySelectorAll('button[data-i]').forEach(function(x){x.onclick=function(){donorId=r.matches[+x.dataset.i].donorId;b.className='warn hide';submit()}});
+ $('newAnyway').onclick=function(){confirmNew=true;b.className='warn hide';submit()};$('cancelDup').onclick=function(){b.className='warn hide'}}
+$('save').onclick=submit;
+</script></body></html>

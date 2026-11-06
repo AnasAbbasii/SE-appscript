@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head><base target="_top"><?!= include('Styles') ?></head><body>
+<h3>Expense</h3>
+<div class="row"><div><label>Load existing Expense ID (optional, to edit)</label><input id="eid" placeholder="EXP-000001"></div><div style="flex:0 0 90px"><label>&nbsp;</label><button type="button" class="sec" id="load">Load</button></div></div>
+<div id="main">
+<div class="row"><div><label>Date *</label><input id="date" type="date"></div><div><label>Amount Spent *</label><input id="amt" inputmode="decimal"></div></div>
+<label>Expense Type / Category *</label><input id="cat" list="cats" autocomplete="off"><datalist id="cats"></datalist>
+<label>Receipt (Drive link or ID)</label><input id="rec">
+<label>Personal Description</label><textarea id="per"></textarea>
+<label>Donation Description</label><textarea id="don"></textarea>
+<label>Contribution to Society</label><textarea id="con"></textarea>
+<div class="bar"><button type="button" id="save">Save Expense</button><button type="button" class="sec" onclick="google.script.host.close()">Close</button></div>
+</div><div id="msg" class="msg"></div>
+<?!= include('Common') ?>
+<script>
+var token=uuid(),loaded='',busy=false,cats=[];
+call('getFormBootstrap',[],function(b){$('date').value=b.today;cats=b.categories;$('cats').innerHTML=cats.map(function(c){return'<option value="'+esc(c)+'">'}).join('');if(cats.length)$('cat').placeholder='Choose from list'},function(e){show('msg',e)});
+$('load').onclick=function(){var id=$('eid').value.trim();if(!id)return;call('getExpense',[id],function(r){var x=r.expense;loaded=x.expenseId;$('date').value=x.date;$('amt').value=x.amount;$('cat').value=x.category;$('rec').value=x.receipt;$('per').value=x.personal;$('don').value=x.donation;$('con').value=x.contribution;show('msg','Loaded '+loaded+'. Saving will update it.',true)},function(e){show('msg',e)})};
+$('save').onclick=function(){if(busy)return;var p={token:token,expenseId:loaded,date:$('date').value,amount:$('amt').value,category:$('cat').value.trim(),receipt:$('rec').value,personal:$('per').value,donation:$('don').value,contribution:$('con').value};
+ if(!validDate(p.date))return show('msg','Please enter a valid expense date.');if(!validAmount(p.amount))return show('msg','Please enter a valid expense amount.');if(!p.category)return show('msg','Please choose an expense category.');
+ if(cats.length&&cats.indexOf(p.category)<0)return show('msg','Category must be one from the list.');
+ busy=true;$('save').disabled=true;show('msg','Saving…',true);
+ call('saveExpense',[p],function(r){$('main').className='hide';show('msg',r.message+'\nExpense ID: '+r.expenseId,true);$('msg').insertAdjacentHTML('afterend','<div class="bar"><button type="button" onclick="location.reload()">Add Another</button><button type="button" class="sec" onclick="google.script.host.close()">Close</button></div>')},
+ function(e){busy=false;$('save').disabled=false;show('msg',e)})};
+</script></body></html>
